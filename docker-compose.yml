@@ -1,0 +1,88 @@
+version: "3.9"
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: mariadb
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: qwer
+      MARIADB_DATABASE: video_chat
+      MARIADB_USER: root
+      MARIADB_PASSWORD: qwer
+    ports:
+    - "33060:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+  
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: mqtt-broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883" 
+      - "9001:9001"
+    volumes:
+      # - ./mosquitto/config:/mosquitto/config:ro
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    healthcheck:
+      test: ["CMD","sh","-c","mosquitto_sub -h localhost -t '$SYS/broker/uptime' -C 1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  coturn:
+    image: coturn/coturn
+    container_name: coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478"       # STUN/TURN TCP/UDP
+      - "3478:3478/udp"
+      - "5349:5349"       # TURN over TLS
+      - "5349:5349/udp"
+    volumes:
+     - ./turnserver.conf:/etc/coturn/turnserver.conf
+  
+  kafka:
+    image: bitnami/kafka
+    container_name: kafka
+    ports:
+     - "9092:9092"
+    environment:
+    # 1. kRaft 모드 활성화 여부
+      KAFKA_ENABLE_FRAFT: "yes"
+     # 2. 브로커와 컨트롤러 역할 / 서버가 어떤 역할을 할지 지정
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      #3. node ID 클로스터 내 고유 ID
+      KAFKA_CFG_NODE_ID: "1"
+      #4. 컨트롤러 투표자 설정 컨트롤러 선출에 참여하는 노드 정보 저장
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      #5. 리스너 정의 서버가 열어둘 네트워크 포트 정의
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+    
+      #6. 외부에서 접근할때 보이는 주소 클라이언트가 접속할 때 사용하는 브로커 주소
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+# 7. 컨트롤러 리스너 이름
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+       # 8. 브로커 간 통신 리스너
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      # 9. 토픽 복제 계수
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+    volumes:
+      - ./data:/bitnami/kafka
+
+volumes:
+  mariadb_data:
+  redis_data: 
