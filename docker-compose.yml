@@ -1,4 +1,3 @@
-version: "3.9"
 
 services:
   mariadb:
@@ -61,7 +60,7 @@ services:
      - "9092:9092"
     environment:
     # 1. kRaft 모드 활성화 여부
-      KAFKA_ENABLE_FRAFT: "yes"
+      KAFKA_ENABLE_KRAFT: "yes"
      # 2. 브로커와 컨트롤러 역할 / 서버가 어떤 역할을 할지 지정
       KAFKA_CFG_PROCESS_ROLES: "broker,controller"
       #3. node ID 클로스터 내 고유 ID
@@ -70,7 +69,8 @@ services:
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
       #5. 리스너 정의 서버가 열어둘 네트워크 포트 정의
       KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
-    
+
+
       #6. 외부에서 접근할때 보이는 주소 클라이언트가 접속할 때 사용하는 브로커 주소
       KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
@@ -80,9 +80,38 @@ services:
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       # 9. 토픽 복제 계수
       KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+
+
+      # topic 자동생성 false
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "false"
     volumes:
       - ./data:/bitnami/kafka
 
+# 엘라스틱 서치 추가
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    # 최소한의 메모리
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+# 키바나 추가
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+    depends_on:
+      - elasticsearch
+
 volumes:
   mariadb_data:
-  redis_data: 
+  redis_data:
+  es_data:
