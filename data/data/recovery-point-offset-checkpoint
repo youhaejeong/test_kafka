@@ -15,7 +15,7 @@ __consumer_offsets 34 0
 __consumer_offsets 16 0
 test-topic1 0 10
 __consumer_offsets 45 0
-__consumer_offsets 12 1413
+__consumer_offsets 12 9118
 __consumer_offsets 41 0
 __consumer_offsets 24 0
 __consumer_offsets 20 0
@@ -34,7 +34,7 @@ __consumer_offsets 44 0
 __consumer_offsets 23 0
 __consumer_offsets 19 0
 __consumer_offsets 32 0
-test-topic 0 45
+test-topic 0 4360
 __consumer_offsets 28 0
 __consumer_offsets 7 0
 __consumer_offsets 40 0
